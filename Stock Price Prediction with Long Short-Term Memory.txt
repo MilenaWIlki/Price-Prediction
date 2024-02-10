@@ -1,0 +1,32 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+
+# Load and preprocess data
+data = pd.read_csv('stock_prices.csv')
+scaler = MinMaxScaler()
+scaled_data = scaler.fit_transform(data['Close'].values.reshape(-1,1))
+
+# Prepare data for LSTM
+def create_dataset(data, time_step):
+    X, y = [], []
+    for i in range(len(data)-time_step):
+        X.append(data[i:i+time_step])
+        y.append(data[i+time_step])
+    return np.array(X), np.array(y)
+
+time_step = 100
+X_train, y_train = create_dataset(scaled_data, time_step)
+
+# Build LSTM model
+model = Sequential([
+    LSTM(units=50, return_sequences=True, input_shape=(time_step, 1)),
+    LSTM(units=50),
+    Dense(units=1)
+])
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train LSTM model
+model.fit(X_train, y_train, epochs=100, batch_size=32)
